@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Baby Pickering Arrival Pool</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 30px;
+        text-align: center;
+        color: white;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .header .subtitle {
+        font-size: 1.2em;
+        opacity: 0.95;
+      }
+
+      .status-bar {
+        background: #e3f2fd;
+        padding: 15px 30px;
+        border-bottom: 2px solid #2196f3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .current-time {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #1565c0;
+      }
+
+      .arrival-status {
+        font-size: 1.1em;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+      }
+
+      .arrival-status.waiting {
+        background: #bbdefb;
+        color: #0d47a1;
+      }
+
+      .arrival-status.arrived {
+        background: #c8e6c9;
+        color: #1b5e20;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .timeline-container {
+        padding: 40px 30px;
+        background: #f8f9fa;
+        position: relative;
+      }
+
+      .timeline-wrapper {
+        position: relative;
+        height: 300px;
+        margin: 20px 0;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        overflow: visible;
+      }
+
+      .timeline {
+        position: absolute;
+        top: 50%;
+        left: 20px;
+        right: 20px;
+        height: 4px;
+        background: #e0e0e0;
+        transform: translateY(-50%);
+      }
+
+      .current-time-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: #1976d2;
+        box-shadow: 0 0 10px rgba(25, 118, 210, 0.5);
+        transition: left 0.5s ease;
+        z-index: 10;
+      }
+
+      .current-time-line::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 12px;
+        height: 12px;
+        background: #1976d2;
+        border-radius: 50%;
+        box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
+      }
+
+      .current-time-label {
+        position: absolute;
+        top: -35px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1976d2;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+        white-space: nowrap;
+      }
+
+      .guess-marker {
+        position: absolute;
+        top: 50%;
+        transform: translateX(-50%);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        z-index: 5;
+      }
+
+      .guess-marker:hover {
+        z-index: 15;
+      }
+
+      .guess-dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transform: translateY(-50%);
+        transition: all 0.3s ease;
+      }
+
+      .guess-dot.past {
+        background: #90a4ae;
+      }
+
+      .guess-dot.current {
+        background: #2196f3;
+      }
+
+      .guess-dot.future {
+        background: #4fc3f7;
+      }
+
+      .guess-dot.arrived {
+        background: #90a4ae;
+      }
+
+      .guess-marker:hover .guess-dot {
+        transform: translateY(-50%) scale(1.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .guess-marker.winner .guess-dot {
+        background: #1976d2;
+        box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.3),
+          0 0 20px rgba(25, 118, 210, 0.5);
+        animation: bounce 1s infinite;
+      }
+
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(-50%) scale(1.2);
+        }
+        50% {
+          transform: translateY(-60%) scale(1.3);
+        }
+      }
+
+      .guess-tooltip {
+        position: absolute;
+        bottom: 55px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #555;
+        color: white;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.85em;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: 20;
+      }
+
+      .guess-marker:hover .guess-tooltip {
+        opacity: 1;
+      }
+
+      .date-labels {
+        position: absolute;
+        bottom: 10px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75em;
+        color: #666;
+      }
+
+      .rankings-container {
+        padding: 30px;
+        background: white;
+      }
+
+      .rankings-header {
+        font-size: 1.8em;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .guess-list {
+        display: grid;
+        gap: 12px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .guess-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.5s ease;
+        border-left: 4px solid #e0e0e0;
+      }
+
+      .guess-item.past {
+        border-left-color: #90a4ae;
+        opacity: 0.8;
+      }
+
+      .guess-item.current {
+        border-left-color: #2196f3;
+        background: #e3f2fd;
+      }
+
+      .guess-item.future {
+        border-left-color: #4fc3f7;
+      }
+
+      .guess-item.winner {
+        background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%);
+        border-left-color: #1976d2;
+        box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+      }
+
+      .guess-item.arrived {
+        border-left-color: #90a4ae;
+        opacity: 0.8;
+      }
+
+      .guess-rank {
+        width: 35px;
+        height: 35px;
+        background: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #666;
+        flex-shrink: 0;
+      }
+
+      .guess-item.current .guess-rank {
+        background: #2196f3;
+        color: white;
+      }
+
+      .guess-item.winner .guess-rank {
+        background: #1976d2;
+        color: white;
+        font-size: 1.2em;
+      }
+
+      .guess-info {
+        flex: 1;
+        margin: 0 20px;
+      }
+
+      .guess-info-name {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: #333;
+      }
+
+      .guess-time {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 2px;
+      }
+
+      .guess-distance {
+        text-align: right;
+        font-size: 0.9em;
+        color: #999;
+      }
+
+      .winner-banner {
+        background: linear-gradient(135deg, #2196f3 0%, #64b5f6 100%);
+        padding: 20px;
+        text-align: center;
+        margin: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        animation: slideIn 0.5s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .winner-banner h2 {
+        font-size: 2em;
+        color: white;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .winner-details {
+        font-size: 1.2em;
+        color: #e3f2fd;
+      }
+
+      .legend {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9em;
+        color: #666;
+      }
+
+      .legend-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .legend-dot.past {
+        background: #90a4ae;
+      }
+      .legend-dot.current {
+        background: #2196f3;
+      }
+      .legend-dot.future {
+        background: #4fc3f7;
+      }
+      .legend-dot.winner {
+        background: #1976d2;
+      }
+      .legend-dot.arrived {
+        background: #90a4ae;
+      }
+
+      /* Mobile responsive fixes */
+      @media (max-width: 768px) {
+        html, body {
+          height: auto;
+          min-height: 100%;
+          overflow-y: scroll;
+          -webkit-overflow-scrolling: touch;
+          position: relative;
+        }
+
+        body {
+          padding: 10px;
+        }
+
+        .container {
+          max-width: 100%;
+          margin: 0;
+        }
+
+        .header h1 {
+          font-size: 1.8em;
+        }
+
+        .header .subtitle {
+          font-size: 1em;
+        }
+
+        .timeline-container {
+          padding: 20px 15px;
+        }
+
+        .timeline-wrapper {
+          height: 250px;
+          padding: 15px;
+        }
+
+        .legend {
+          flex-direction: column;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .legend-item {
+          justify-content: center;
+          width: 100%;
+          max-width: 200px;
+        }
+
+        .legend-dot {
+          flex-shrink: 0;
+          width: 16px !important;
+          height: 16px !important;
+          border-radius: 50% !important;
+          border: 2px solid white !important;
+        }
+
+        .rankings-container {
+          padding: 20px 15px;
+        }
+
+        .guess-list {
+          gap: 8px;
+        }
+
+        .guess-item {
+          padding: 12px 15px;
+        }
+
+        .status-bar {
+          flex-direction: column;
+          gap: 10px;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🍼 Baby Pickering Arrival Pool 👶</h1>
+        <div class="subtitle">Who will guess the arrival time correctly?</div>
+      </div>
+
+      <div class="status-bar">
+        <div class="current-time" id="currentTimeDisplay"></div>
+        <div class="arrival-status waiting" id="arrivalStatus">
+          ⏳ Waiting for baby...
+        </div>
+      </div>
+
+      <div class="timeline-container">
+        <div class="timeline-wrapper">
+          <div class="timeline"></div>
+          <div class="current-time-line" id="currentTimeLine">
+            <div class="current-time-label" id="currentTimeLineLabel">NOW</div>
+          </div>
+          <div id="guessMarkers"></div>
+          <div class="date-labels" id="dateLabels"></div>
+        </div>
+        <div class="legend" id="legend">
+          <div class="legend-item">
+            <div class="legend-dot past"></div>
+            <span>Past</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot current"></div>
+            <span>Closest to now</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot future"></div>
+            <span>Future (can still win)</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="winnerBanner"></div>
+
+      <div class="rankings-container">
+        <h2 class="rankings-header">Current Rankings (Closest to Now)</h2>
+        <div class="guess-list" id="guessList"></div>
+      </div>
+    </div>
+
+    <script>
+      // Configuration and Data
+      const guesses = {
+        "Maddy Simonsen": "Sep 30, 5:00pm",
+        "Noah Dolce": "Oct 1, 1:45pm",
+        "Soundha Key": "Oct 1, 5:39pm",
+        "Cynthia Guizar": "Oct 2, 1:00pm",
+        "Tristan Gibson": "Oct 1, 9:50pm",
+        "Emily Owensby": "Oct 5, 6:00pm",
+        "Stephen Gillis": "Oct 5, 3:30am",
+        "Scott Cameron": "Oct 6, 7:00am",
+        "RoShaine Perry": "Oct 1, 7:05am",
+        "Nicolle Lavado": "Oct 1, 11:00am",
+        "Jessica Armstrong": "Oct 3, 9:00pm",
+        "Elizabeth Driggers": "Oct 3, 12:13pm",
+        "Michiel van Bruggen": "Oct 8, 3:30pm",
+        "Stephanie Yttrup": "Oct 2, 7:00am",
+        "Steven Anderson": "Oct 3, 11:42am",
+        "Peter Dore": "Oct 5, 12:15pm",
+        "Ryley Oroku": "Oct 7, 4:20am",
+        "Brendon Fleming": "Oct 2, 2:15am",
+        "Noah Dolce's wife": "Oct 4, 6:00am",
+        "Brandon Vaccaro": "Oct 2, 10:30pm",
+        "Cole Callejo": "Sep 29, 6:00pm",
+        "Josh Velasquez": "Oct 2, 5:40am",
+        "Maci Kauffman": "Oct 4, 2:00pm",
+        "David Ponce De Leon": "Oct 3, 7:03am",
+        "Eric Knopf": "Oct 7, 7:17pm",
+        "Christine Asciutto": "Oct 6, 3:38pm",
+        "Keith Olson": "Oct 3, 5:42am",
+        "Mandy Lawrence": "Oct 9, 10:10am",
+        "Brandon Marshall": "Oct 5, 7:15am",
+        "Aaron Dolce": "Oct 4, 2:43am",
+        "Katie Nutting": "Oct 7, 10:30am",
+        "Shaunta Sanders": "Oct 6, 5:45am",
+      };
+
+      // Constants for date range (easy adjustment)
+      const MIN_DATE = "Sep 28, 2025";
+      const MAX_DATE = "Oct 10, 2025";
+
+      // Set to null initially, update with actual arrival time when baby arrives
+      // Example: "Oct 4, 3:27pm"
+      const actualArrivalTime = null;
+
+      // Parse date strings
+      function parseGuessDate(dateStr, includeYear = false) {
+        const year = 2025;
+        const months = {
+          Sep: 8,
+          Sept: 8,
+          September: 8,
+          Oct: 9,
+          October: 9,
+        };
+
+        // Handle the date string with optional year
+        const cleanStr = dateStr.replace(/,\s*\d{4}/, "").replace(/,/g, "");
+        const parts = cleanStr.split(" ");
+        const month = months[parts[0]];
+        const day = parseInt(parts[1]);
+
+        // Handle time if present
+        if (parts.length > 2) {
+          let timeParts = parts[2].match(/(\d+):(\d+)(am|pm)/i);
+          if (timeParts) {
+            let hours = parseInt(timeParts[1]);
+            let minutes = parseInt(timeParts[2]);
+            const isPM = timeParts[3].toLowerCase() === "pm";
+
+            if (isPM && hours !== 12) hours += 12;
+            if (!isPM && hours === 12) hours = 0;
+
+            return new Date(year, month, day, hours, minutes);
+          }
+        }
+
+        // If no time specified, default to noon
+        return new Date(year, month, day, 12, 0);
+      }
+
+      // Format date for display
+      function formatDate(date) {
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const ampm = hours >= 12 ? "pm" : "am";
+        const displayHours = hours % 12 || 12;
+        const displayMinutes = minutes.toString().padStart(2, "0");
+
+        return `${
+          months[date.getMonth()]
+        } ${date.getDate()}, ${displayHours}:${displayMinutes}${ampm}`;
+      }
+
+      // Format date for labels
+      function formatDateShort(date) {
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        return `${months[date.getMonth()]} ${date.getDate()}`;
+      }
+
+      // Calculate time difference in human-readable format
+      function getTimeDifference(date1, date2) {
+        const diff = Math.abs(date1 - date2);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor(
+          (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        let result = [];
+        if (days > 0) result.push(`${days}d`);
+        if (hours > 0) result.push(`${hours}h`);
+        if (minutes > 0) result.push(`${minutes}m`);
+
+        return result.join(" ") || "0m";
+      }
+
+      // Main application
+      class BabyArrivalPool {
+        constructor() {
+          this.guessData = [];
+          // Always use Pacific timezone for display
+          this.currentTime = actualArrivalTime
+            ? parseGuessDate(actualArrivalTime)
+            : this.getCurrentPacificTime();
+          this.minDate = parseGuessDate(MIN_DATE, true);
+          this.maxDate = parseGuessDate(MAX_DATE, true);
+          this.timelineWidth = 0;
+
+          this.init();
+        }
+
+        getCurrentPacificTime() {
+          // Create a date in Pacific timezone
+          const now = new Date();
+          const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+          // Pacific is UTC-8 (standard) or UTC-7 (daylight)
+          // Check if we're in daylight saving time
+          const isDST = this.isDaylightSavingTime(now);
+          const pacificOffset = isDST ? -7 : -8;
+          return new Date(utc + pacificOffset * 3600000);
+        }
+
+        isDaylightSavingTime(date) {
+          // DST in US typically runs from second Sunday in March to first Sunday in November
+          const year = date.getFullYear();
+          const march = new Date(year, 2, 1); // March 1st
+          const november = new Date(year, 10, 1); // November 1st
+
+          // Find second Sunday in March
+          const dstStart = new Date(year, 2, 1);
+          dstStart.setDate(1 + (7 - dstStart.getDay()) + 7);
+
+          // Find first Sunday in November
+          const dstEnd = new Date(year, 10, 1);
+          dstEnd.setDate(1 + (7 - dstEnd.getDay()));
+
+          return date >= dstStart && date < dstEnd;
+        }
+
+        init() {
+          this.processGuesses();
+          this.setupDateLabels();
+
+          // Delay timeline setup to ensure DOM is fully rendered
+          setTimeout(() => {
+            this.setupTimeline();
+            this.updateDisplay();
+          }, 100);
+
+          if (!actualArrivalTime) {
+            setInterval(() => this.updateDisplay(), 1000);
+          }
+        }
+
+        processGuesses() {
+          for (const [name, timeStr] of Object.entries(guesses)) {
+            this.guessData.push({
+              name: name,
+              timeStr: timeStr,
+              date: parseGuessDate(timeStr),
+            });
+          }
+        }
+
+        setupDateLabels() {
+          const dateLabels = document.getElementById("dateLabels");
+          dateLabels.innerHTML = "";
+
+          // Create 5 evenly spaced date labels
+          const totalDays =
+            (this.maxDate - this.minDate) / (1000 * 60 * 60 * 24);
+          const interval = totalDays / 4;
+
+          for (let i = 0; i <= 4; i++) {
+            const labelDate = new Date(
+              this.minDate.getTime() + interval * i * 1000 * 60 * 60 * 24
+            );
+            const span = document.createElement("span");
+            span.textContent = formatDateShort(labelDate);
+            dateLabels.appendChild(span);
+          }
+        }
+
+        setupTimeline() {
+          const markersContainer = document.getElementById("guessMarkers");
+          markersContainer.innerHTML = "";
+
+          // Sort guesses to get the current closest one
+          const sortedGuesses = [...this.guessData].sort((a, b) => {
+            const diffA = Math.abs(a.date - this.currentTime);
+            const diffB = Math.abs(b.date - this.currentTime);
+            return diffA - diffB;
+          });
+          const closestGuess = sortedGuesses[0];
+
+          this.guessData.forEach((guess, index) => {
+            const position = this.getTimelinePosition(guess.date);
+            const marker = document.createElement("div");
+            marker.className = "guess-marker";
+            marker.style.left = `${position}%`;
+
+            // Determine dot color based on position relative to current time
+            let dotClass = "future";
+            if (actualArrivalTime) {
+              dotClass = "arrived";
+            } else if (guess === closestGuess) {
+              dotClass = "current";
+            } else if (guess.date < this.currentTime) {
+              dotClass = "past";
+            }
+
+            marker.innerHTML = `
+                        <div class="guess-dot ${dotClass}"></div>
+                        <div class="guess-tooltip">${guess.name}<br>${guess.timeStr}</div>
+                    `;
+            markersContainer.appendChild(marker);
+          });
+        }
+
+        getTimelinePosition(date) {
+          const totalRange = this.maxDate - this.minDate;
+          const datePosition = date - this.minDate;
+          const position = (datePosition / totalRange) * 100;
+          // Clamp between 0 and 100
+          return Math.max(0, Math.min(100, position));
+        }
+
+        updateDisplay() {
+          if (!actualArrivalTime) {
+            this.currentTime = this.getCurrentPacificTime();
+          }
+
+          // Update current time display - hide if baby has arrived
+          const currentTimeDisplay =
+            document.getElementById("currentTimeDisplay");
+          if (actualArrivalTime) {
+            currentTimeDisplay.style.display = "none";
+          } else {
+            const timezone = this.isDaylightSavingTime(this.currentTime)
+              ? "PDT"
+              : "PST";
+            currentTimeDisplay.textContent = `Current Time: ${formatDate(
+              this.currentTime
+            )} ${timezone}`;
+            currentTimeDisplay.style.display = "block";
+          }
+
+          // Update arrival status
+          const statusEl = document.getElementById("arrivalStatus");
+          if (actualArrivalTime) {
+            statusEl.className = "arrival-status arrived";
+            statusEl.innerHTML = `🎉 Baby arrived at ${actualArrivalTime}!`;
+          }
+
+          // Update current time line position
+          const linePosition = this.getTimelinePosition(this.currentTime);
+          const timeLine = document.getElementById("currentTimeLine");
+          timeLine.style.left = `${linePosition}%`;
+
+          // Update label
+          const label = document.getElementById("currentTimeLineLabel");
+          if (actualArrivalTime) {
+            label.textContent = "ARRIVED!";
+            label.style.background = "#4CAF50";
+          } else if (this.currentTime < this.minDate) {
+            label.textContent = "BEFORE";
+          } else if (this.currentTime > this.maxDate) {
+            label.textContent = "AFTER";
+          } else {
+            label.textContent = "NOW";
+          }
+
+          // Sort guesses by distance from current time
+          const sortedGuesses = [...this.guessData].sort((a, b) => {
+            const diffA = Math.abs(a.date - this.currentTime);
+            const diffB = Math.abs(b.date - this.currentTime);
+            return diffA - diffB;
+          });
+
+          // Update timeline markers colors
+          this.updateTimelineColors(sortedGuesses[0]);
+
+          // Update rankings
+          this.updateRankings(sortedGuesses);
+
+          // Update winner if baby arrived
+          if (actualArrivalTime) {
+            this.showWinner(sortedGuesses[0]);
+            this.updateLegend();
+          }
+        }
+
+        updateTimelineColors(closestGuess) {
+          const markers = document.querySelectorAll(".guess-marker");
+          markers.forEach((marker) => {
+            const nameEl = marker.querySelector(".guess-name");
+            const dotEl = marker.querySelector(".guess-dot");
+            if (nameEl && dotEl) {
+              const name = nameEl.textContent;
+              const guess = this.guessData.find((g) => g.name === name);
+
+              // Remove all color classes
+              dotEl.classList.remove("past", "current", "future");
+
+              // Add appropriate class
+              if (guess === closestGuess) {
+                dotEl.classList.add("current");
+              } else if (guess.date < this.currentTime) {
+                dotEl.classList.add("past");
+              } else {
+                dotEl.classList.add("future");
+              }
+            }
+          });
+        }
+
+        updateRankings(sortedGuesses) {
+          const listEl = document.getElementById("guessList");
+          listEl.innerHTML = "";
+
+          sortedGuesses.forEach((guess, index) => {
+            const isWinner = actualArrivalTime && index === 0;
+            const isClosest = index === 0;
+            const isPast = guess.date < this.currentTime;
+            const isFuture = guess.date > this.currentTime;
+
+            let itemClass = "guess-item";
+            if (actualArrivalTime) {
+              if (isWinner) {
+                itemClass += " winner";
+              } else {
+                itemClass += " arrived";
+              }
+            } else if (isClosest) {
+              itemClass += " current";
+            } else if (isPast) {
+              itemClass += " past";
+            } else if (isFuture) {
+              itemClass += " future";
+            }
+
+            const item = document.createElement("div");
+            item.className = itemClass;
+
+            const timeDiff = getTimeDifference(guess.date, this.currentTime);
+            const beforeAfter = guess.date < this.currentTime ? "ago" : "away";
+
+            item.innerHTML = `
+                        <div class="guess-rank">${
+                          isWinner ? "👑" : index + 1
+                        }</div>
+                        <div class="guess-info">
+                            <div class="guess-info-name">${guess.name}</div>
+                            <div class="guess-time">${guess.timeStr}</div>
+                        </div>
+                        <div class="guess-distance">${timeDiff} ${beforeAfter}</div>
+                    `;
+
+            listEl.appendChild(item);
+          });
+        }
+
+        updateLegend() {
+          const legendEl = document.getElementById("legend");
+          legendEl.innerHTML = `
+            <div class="legend-item">
+              <div class="legend-dot winner"></div>
+              <span>Winner</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot arrived"></div>
+              <span>Non-winner</span>
+            </div>
+          `;
+        }
+
+        showWinner(winner) {
+          // Highlight winner on timeline
+          const markers = document.querySelectorAll(".guess-marker");
+          markers.forEach((marker) => {
+            const nameEl = marker.querySelector(".guess-name");
+            if (nameEl && nameEl.textContent === winner.name) {
+              marker.classList.add("winner");
+            }
+          });
+
+          // Show winner banner if not already shown
+          const bannerEl = document.getElementById("winnerBanner");
+          if (!bannerEl.innerHTML) {
+            const timeDiff = getTimeDifference(winner.date, this.currentTime);
+            bannerEl.innerHTML = `
+                        <div class="winner-banner">
+                            <h2>🏆 Winner: ${winner.name}! 🏆</h2>
+                            <div class="winner-details">
+                                Guessed: ${winner.timeStr} (off by ${timeDiff})
+                            </div>
+                        </div>
+                    `;
+          }
+        }
+      }
+
+      // Initialize the application
+      document.addEventListener("DOMContentLoaded", () => {
+        new BabyArrivalPool();
+      });
+    </script>
+  </body>
+</html>
