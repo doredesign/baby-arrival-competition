@@ -429,6 +429,48 @@
         background: #90a4ae;
       }
 
+      .slice-overlay {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        background: rgba(33, 150, 243, 0.2);
+        border: 1px solid rgba(33, 150, 243, 0.5);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 8;
+      }
+
+      .slice-overlay.visible {
+        opacity: 1;
+      }
+
+      .guess-odds {
+        font-size: 0.85em;
+        color: #1976d2;
+        font-weight: 600;
+        cursor: help;
+        position: relative;
+      }
+
+      .guess-odds[data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #555;
+        color: white;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.85em;
+        white-space: nowrap;
+        z-index: 20;
+        opacity: 1;
+        transition: none;
+        pointer-events: none;
+      }
+
       /* Mobile responsive fixes */
       @media (max-width: 768px) {
         html,
@@ -554,6 +596,14 @@
     </div>
 
     <script>
+      // Set to null initially, update with actual arrival time when baby arrives
+      // Example: "Oct 4, 3:27pm"
+      const actualArrivalTime = null;
+
+      // Constants for date range (easy adjustment)
+      const MIN_DATE = "Sep 28, 2025";
+      const MAX_DATE = "Oct 10, 2025";
+
       // Configuration and Data
       const guesses = {
         "Maddy Simonsen": "Sep 30, 5:00pm",
@@ -593,14 +643,6 @@
         "Peter's wife (Jessica)": "Oct 5, 3:49am",
         "Zoie Kabir": "Oct 7, 5:00pm",
       };
-
-      // Constants for date range (easy adjustment)
-      const MIN_DATE = "Sep 28, 2025";
-      const MAX_DATE = "Oct 10, 2025";
-
-      // Set to null initially, update with actual arrival time when baby arrives
-      // Example: "Oct 4, 3:27pm"
-      const actualArrivalTime = null;
 
       // Parse date strings
       function parseGuessDate(dateStr, includeYear = false) {
@@ -755,7 +797,7 @@
           }, 100);
 
           if (!actualArrivalTime) {
-            setInterval(() => this.updateDisplay(), 1000);
+            setInterval(() => this.updateDisplay(), 10000);
           }
         }
 
@@ -767,6 +809,70 @@
               date: parseGuessDate(timeStr),
             });
           }
+          this.calculateOdds();
+        }
+
+        calculateOdds() {
+          if (actualArrivalTime) return; // Don't calculate odds if baby has arrived
+
+          const now = this.currentTime;
+          const startDate = new Date(
+            Math.max(this.minDate.getTime(), now.getTime())
+          );
+          const endDate = new Date(
+            Math.max(this.maxDate.getTime(), now.getTime())
+          );
+          const totalRangeHours = (endDate - startDate) / (1000 * 60 * 60);
+
+          // Sort guesses by date for slice calculation
+          const sortedGuesses = [...this.guessData].sort(
+            (a, b) => a.date - b.date
+          );
+
+          sortedGuesses.forEach((guess, index) => {
+            // Calculate slice boundaries
+            let leftBoundary, rightBoundary;
+
+            // Left boundary
+            if (index === 0) {
+              leftBoundary = startDate;
+            } else {
+              const prevGuess = sortedGuesses[index - 1];
+              const midpoint = new Date(
+                (guess.date.getTime() + prevGuess.date.getTime()) / 2
+              );
+              leftBoundary = new Date(
+                Math.max(now.getTime(), midpoint.getTime())
+              );
+            }
+
+            // Right boundary
+            if (index === sortedGuesses.length - 1) {
+              rightBoundary = endDate;
+            } else {
+              const nextGuess = sortedGuesses[index + 1];
+              rightBoundary = new Date(
+                (guess.date.getTime() + nextGuess.date.getTime()) / 2
+              );
+            }
+
+            // Calculate slice width and odds
+            const sliceHours = Math.max(
+              0,
+              (rightBoundary - leftBoundary) / (1000 * 60 * 60)
+            );
+            const odds =
+              totalRangeHours > 0 ? (sliceHours / totalRangeHours) * 100 : 0;
+
+            // Store odds data on the guess object
+            guess.odds = {
+              percentage: odds,
+              sliceHours: sliceHours,
+              totalHours: totalRangeHours,
+              leftBoundary: leftBoundary,
+              rightBoundary: rightBoundary,
+            };
+          });
         }
 
         setupDateLabels() {
@@ -816,10 +922,45 @@
               dotClass = "past";
             }
 
+            // Create slice overlay for this guess
+            const sliceOverlay = document.createElement("div");
+            sliceOverlay.className = "slice-overlay";
+            if (guess.odds) {
+              const leftPos = this.getTimelinePosition(guess.odds.leftBoundary);
+              const rightPos = this.getTimelinePosition(
+                guess.odds.rightBoundary
+              );
+              sliceOverlay.style.left = `${leftPos}%`;
+              sliceOverlay.style.width = `${rightPos - leftPos}%`;
+            }
+
+            // Enhanced tooltip with odds
+            let tooltipContent = `${guess.name}<br>${guess.timeStr}`;
+            if (guess.odds && !actualArrivalTime) {
+              tooltipContent += `<br>${guess.odds.percentage.toFixed(
+                2
+              )}% (${guess.odds.sliceHours.toFixed(
+                1
+              )} hours of ${guess.odds.totalHours.toFixed(1)} possible)`;
+            }
+
             marker.innerHTML = `
                         <div class="guess-dot ${dotClass}"></div>
-                        <div class="guess-tooltip">${guess.name}<br>${guess.timeStr}</div>
+                        <div class="guess-tooltip">${tooltipContent}</div>
                     `;
+
+            // Add hover events for slice visualization
+            marker.addEventListener("mouseenter", () => {
+              if (guess.odds && !actualArrivalTime) {
+                sliceOverlay.classList.add("visible");
+              }
+            });
+
+            marker.addEventListener("mouseleave", () => {
+              sliceOverlay.classList.remove("visible");
+            });
+
+            markersContainer.appendChild(sliceOverlay);
             markersContainer.appendChild(marker);
           });
         }
@@ -835,6 +976,7 @@
         updateDisplay() {
           if (!actualArrivalTime) {
             this.currentTime = this.getCurrentPacificTime();
+            this.calculateOdds(); // Recalculate odds as time passes
           }
 
           // Update current time display - hide if baby has arrived
@@ -952,6 +1094,28 @@
             const timeDiff = getTimeDifference(guess.date, this.currentTime);
             const beforeAfter = guess.date < this.currentTime ? "ago" : "away";
 
+            // Create odds display with tooltip
+            let oddsHtml = "";
+            if (guess.odds && !actualArrivalTime) {
+              let tooltipText;
+              if (guess.odds.percentage === 0) {
+                tooltipText = `0 hours of ${guess.odds.totalHours.toFixed(
+                  1
+                )} possible hours remaining`;
+              } else {
+                const leftBoundaryStr = formatDate(guess.odds.leftBoundary);
+                const rightBoundaryStr = formatDate(guess.odds.rightBoundary);
+                tooltipText = `${leftBoundaryStr} to ${rightBoundaryStr} = ${guess.odds.sliceHours.toFixed(
+                  1
+                )} hrs of ${guess.odds.totalHours.toFixed(
+                  1
+                )} possible hours remaining`;
+              }
+              oddsHtml = `<div class="guess-odds" data-tooltip="${tooltipText}">${guess.odds.percentage.toFixed(
+                2
+              )}%</div>`;
+            }
+
             item.innerHTML = `
                         <div class="guess-rank">${
                           isWinner ? "👑" : index + 1
@@ -960,7 +1124,8 @@
                             <div class="guess-info-name">${guess.name}</div>
                             <div class="guess-time">${guess.timeStr}</div>
                         </div>
-                        <div class="guess-distance">${timeDiff} ${beforeAfter}</div>
+                        <div class="guess-distance">${timeDiff} ${beforeAfter}</div>&nbsp;
+                        ${oddsHtml}
                     `;
 
             listEl.appendChild(item);
