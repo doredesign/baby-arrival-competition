@@ -975,10 +975,26 @@
           return Math.max(0, Math.min(100, position));
         }
 
+        updateSliceOverlays() {
+          const sliceOverlays = document.querySelectorAll(".slice-overlay");
+          sliceOverlays.forEach((sliceOverlay, index) => {
+            const guess = this.guessData[index];
+            if (guess && guess.odds) {
+              const leftPos = this.getTimelinePosition(guess.odds.leftBoundary);
+              const rightPos = this.getTimelinePosition(
+                guess.odds.rightBoundary
+              );
+              sliceOverlay.style.left = `${leftPos}%`;
+              sliceOverlay.style.width = `${rightPos - leftPos}%`;
+            }
+          });
+        }
+
         updateDisplay() {
           if (!actualArrivalTime) {
             this.currentTime = this.getCurrentPacificTime();
             this.calculateOdds(); // Recalculate odds as time passes
+            this.updateSliceOverlays(); // Update slice overlay positions
           }
 
           // Update current time display - hide if baby has arrived
